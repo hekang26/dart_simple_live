@@ -257,17 +257,5 @@ jobs:
       - name: Echo version
         run: echo "${{ steps.version.outputs.VERSION }}"
 
-      #上传至Release
-      - name: Upload Release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: "${{ steps.version.outputs.VERSION }}"
-          generate_release_notes: true
-          prerelease: ${{ contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
-          token: ${{ secrets.TOKEN }}
-          files: |
-            simple_live_app/build/dist/*/*.msix
-            simple_live_app/build/dist/*/*.zip
-
       #完成
       - run: echo "🍏 Windows job's status is ${{ job.status }}."
