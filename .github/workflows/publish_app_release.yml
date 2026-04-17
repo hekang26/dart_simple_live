@@ -12,14 +12,14 @@ jobs:
       contents: write
     steps:
       #签出代码
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: master
 
       #APK签名设置
       - name: Download Android keystore
         id: android_keystore
-        uses: timheuer/base64-to-file@v1.2
+        uses: timheuer/base64-to-file@v2
         with:
           fileName: keystore.jks
           encodedString: ${{ secrets.KEYSTORE_BASE64 }}
