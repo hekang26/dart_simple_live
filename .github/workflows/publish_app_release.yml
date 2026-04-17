@@ -16,12 +16,17 @@ jobs:
           flutter-version: "3.24.0"
           cache: true
 
-      # 强制使用兼容的 intl 版本，直接跳过冲突检查
-      - name: Force resolve dependencies
+      # 强制覆盖 intl 版本，彻底绕过冲突（关键！）
+      - name: Fix intl dependency conflict
         run: |
           cd simple_live_app
-          flutter pub add intl:0.19.0 --dev
-          flutter pub get --no-enforce-lockfile
+          # 强制修改 pubspec.yaml 里的 intl 版本为 0.19.0
+          sed -i.bak 's/intl: ^0.20.2/intl: ^0.19.0/g' pubspec.yaml
+          rm -f pubspec.yaml.bak
+          # 强制清理缓存并获取依赖
+          flutter clean
+          flutter pub cache repair
+          flutter pub get
 
       # 直接打包 iOS（兼容你的 16.4.1）
       - name: Build iOS
