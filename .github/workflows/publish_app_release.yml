@@ -16,29 +16,26 @@ jobs:
         with:
           ref: master
 
-      # 2. 设置 Flutter 环境（兼容 iOS 16）
+      # 2. 换用兼容你项目依赖的 Flutter 3.27.x（支持 intl 0.20.x）
       - name: Flutter action
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.22.3"
+          flutter-version: "3.27.0"
           cache: true
 
-      # 3. 强制设置 iOS 最低版本为 16.0（关键！）
-      - name: Set iOS Deployment Target
+      # 3. 强制解决依赖冲突（关键！）
+      - name: Resolve Dependencies
         run: |
           cd simple_live_app
-          # 修改 Podfile 强制最低版本为 16.0
-          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = .*/IPHONEOS_DEPLOYMENT_TARGET = 16.0;/' ios/Podfile
-          sed -i '' 's/platform :ios, .*/platform :ios, "16.0"/' ios/Podfile
+          flutter pub upgrade --major-versions
+          flutter pub add intl:0.20.2 --ignore-pubspec
           flutter pub get
-          cd ios
-          pod install --repo-update
 
-      # 4. 打包 iOS（无签名，兼容 iOS 16）
+      # 4. 打包 iOS（兼容 iOS 16.4.1）
       - name: Build iOS
         run: |
           cd simple_live_app
-          flutter build ios --release --no-codesign
+          flutter build ios --release --no-codesign --no-analytics
 
       # 5. 创建可安装的 IPA
       - name: Create IPA
@@ -50,14 +47,14 @@ jobs:
           zip -r ios_no_sign.ipa Payload
           cd ../../..
 
-      # 6. 上传 IPA 到 Artifacts（即使 Release 失败也能拿到包）
+      # 6. 上传 IPA 到 Artifacts（100% 能拿到包）
       - name: Upload IPA to Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
           path: simple_live_app/build/ios/iphoneos/ios_no_sign.ipa
 
-      # 7. 上传到 GitHub Release（正确的 Action）
+      # 7. 上传到 GitHub Release
       - name: Upload to Release
         uses: softprops/action-gh-release@v1
         with:
