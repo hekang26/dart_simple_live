@@ -8,25 +8,25 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # 用稳定版 Flutter，兼容所有依赖
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.22.0"
 
-      # 正常安装依赖，去掉 --force
-      - name: Install dependencies
+      # 强制修改 pubspec.yaml，把 intl 版本改成兼容的 0.19.0
+      - name: Fix pubspec.yaml
         run: |
           cd simple_live_app
+          # 用 sed 强制替换 intl 版本
+          sed -i '' 's/intl: ^0.20.2/intl: ^0.19.0/g' pubspec.yaml
+          # 清理并安装依赖
           flutter clean
           flutter pub get
 
-      # 打包 iOS
       - name: Build iOS
         run: |
           cd simple_live_app
           flutter build ios --release --no-codesign
 
-      # 生成 IPA
       - name: Make IPA
         run: |
           cd simple_live_app/build/ios/iphoneos
@@ -34,7 +34,6 @@ jobs:
           cp -r Runner.app Payload/
           zip -r ios_no_sign.ipa Payload
 
-      # 上传 IPA
       - uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
