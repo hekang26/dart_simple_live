@@ -1,0 +1,58 @@
+name: build-ios-only
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.27.0"
+          channel: stable
+
+      - name: Override pubspec
+        run: |
+          cd simple_live_app
+          cat > pubspec.yaml << 'EOF'
+name: simple_live_app
+description: "Simple Live App"
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.6.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.19.0
+  url_launcher: 6.3.1
+  image_gallery_saver_plus: 3.1.0
+  connectivity_plus: 6.1.1
+
+flutter:
+  uses-material-design: true
+EOF
+          flutter clean
+          flutter pub get
+
+      - name: Build iOS
+        run: |
+          cd simple_live_app
+          flutter build ios --release --no-codesign
+
+      - name: Make IPA
+        run: |
+          cd simple_live_app/build/ios/iphoneos
+          mkdir -p Payload
+          cp -r Runner.app Payload/
+          zip -r ios_no_sign.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: simple_live_app/build/ios/iphoneos/ios_no_sign.ipa
