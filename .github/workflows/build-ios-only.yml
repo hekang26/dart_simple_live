@@ -8,17 +8,36 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # 用兼容 Dart 3.5.0 的 Flutter 3.19.0
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.22.0"
+          flutter-version: "3.19.0"
 
-      # 强制修改 pubspec.yaml，把 intl 版本改成兼容的 0.19.0
-      - name: Fix pubspec.yaml
+      # 直接重写 pubspec.yaml，写死所有兼容版本
+      - name: Rewrite pubspec.yaml
         run: |
           cd simple_live_app
-          # 用 sed 强制替换 intl 版本
-          sed -i '' 's/intl: ^0.20.2/intl: ^0.19.0/g' pubspec.yaml
-          # 清理并安装依赖
+          cat > pubspec.yaml << 'EOF'
+name: simple_live_app
+description: "Simple Live App"
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.19.0
+  url_launcher: 6.2.5
+  image_gallery_saver_plus: 3.1.0
+  connectivity_plus: 6.1.1
+
+flutter:
+  uses-material-design: true
+EOF
           flutter clean
           flutter pub get
 
