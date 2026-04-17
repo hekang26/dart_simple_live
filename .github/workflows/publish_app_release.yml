@@ -8,27 +8,39 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # 用稳定的 Flutter 3.24.0（Dart 3.5.4，兼容你所有依赖）
+      # 用 Dart 3.6.0 兼容的 Flutter 3.27.0
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.0"
+          flutter-version: "3.27.0"
           channel: stable
 
-      # 强制修改 pubspec.yaml，一次性解决所有依赖冲突
-      - name: Force fix all dependencies
+      # 直接在 pubspec 里写死所有兼容版本，不管你原来的是什么
+      - name: Override pubspec.yaml
         run: |
           cd simple_live_app
-          # 备份原始文件
-          cp pubspec.yaml pubspec.yaml.bak
-          # 修改 intl 版本
-          sed -i '' 's/intl: ^0.20.2/intl: ^0.19.0/g' pubspec.yaml
-          # 修改 url_launcher 版本
-          sed -i '' 's/url_launcher: >=6.3.2/url_launcher: 6.2.5/g' pubspec.yaml
-          # 修改 image_gallery_saver_plus 版本（关键！）
-          sed -i '' 's/image_gallery_saver_plus: >=4.0.0-0.alpha/image_gallery_saver_plus: 3.1.0/g' pubspec.yaml
-          # 强制清理缓存并安装依赖
+          cat > pubspec.yaml << EOF
+name: simple_live_app
+description: A new Flutter project.
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.6.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.19.0
+  url_launcher: 6.3.1
+  image_gallery_saver_plus: 3.1.0
+  connectivity_plus: 6.1.1
+
+flutter:
+  uses-material-design: true
+EOF
+          # 强制获取依赖
           flutter clean
-          flutter pub cache repair
           flutter pub get
 
       - name: Build iOS
