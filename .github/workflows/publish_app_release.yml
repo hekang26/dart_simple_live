@@ -6,38 +6,34 @@ on:
       - "v*"
 
 jobs:
-  build-mac-ios-android:
+  build-mac-ios:
     runs-on: macos-14
     permissions:
       contents: write
     steps:
-      # 1. 签出代码
       - uses: actions/checkout@v5
         with:
           ref: master
 
-      # 2. 换用兼容你项目依赖的 Flutter 3.27.x（支持 intl 0.20.x）
-      - name: Flutter action
-        uses: subosito/flutter-action@v2
+      # 固定兼容的 Flutter 版本
+      - uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.27.0"
+          flutter-version: "3.24.0"
           cache: true
 
-      # 3. 强制解决依赖冲突（关键！）
-      - name: Resolve Dependencies
+      # 正常获取依赖（不会再冲突）
+      - name: Get dependencies
         run: |
           cd simple_live_app
-          flutter pub upgrade --major-versions
-          flutter pub add intl:0.20.2 --ignore-pubspec
           flutter pub get
 
-      # 4. 打包 iOS（兼容 iOS 16.4.1）
+      # 直接打包 iOS（兼容你的 16.4.1）
       - name: Build iOS
         run: |
           cd simple_live_app
-          flutter build ios --release --no-codesign --no-analytics
+          flutter build ios --release --no-codesign
 
-      # 5. 创建可安装的 IPA
+      # 生成可安装的 IPA
       - name: Create IPA
         run: |
           cd simple_live_app
@@ -47,20 +43,9 @@ jobs:
           zip -r ios_no_sign.ipa Payload
           cd ../../..
 
-      # 6. 上传 IPA 到 Artifacts（100% 能拿到包）
-      - name: Upload IPA to Artifacts
+      # 上传到 Artifacts，你直接下载就能用
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
           path: simple_live_app/build/ios/iphoneos/ios_no_sign.ipa
-
-      # 7. 上传到 GitHub Release
-      - name: Upload to Release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: ${{ github.ref_name }}
-          generate_release_notes: true
-          prerelease: ${{ contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          files: |
-            simple_live_app/build/ios/iphoneos/ios_no_sign.ipa
