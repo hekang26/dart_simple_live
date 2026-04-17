@@ -1,52 +1,46 @@
-name: build-ios-only
+name: build-ios
 on:
   workflow_dispatch:
 
 jobs:
-  build-mac-ios:
+  build:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v5
-        with:
-          ref: master
 
-      # 固定和 intl 0.19.0 兼容的 Flutter 版本
+      # 用和你所有依赖都兼容的稳定版
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.0"
-          cache: true
+          flutter-version: "3.22.3"
+          channel: stable
 
-      # 强制覆盖 intl 版本，彻底绕过冲突（关键！）
-      - name: Fix intl dependency conflict
+      # 强制修改 pubspec.yaml，让所有依赖版本都兼容
+      - name: Force dependency versions
         run: |
           cd simple_live_app
-          # 强制修改 pubspec.yaml 里的 intl 版本为 0.19.0
+          # 把 intl 降到兼容版本
           sed -i.bak 's/intl: ^0.20.2/intl: ^0.19.0/g' pubspec.yaml
-          rm -f pubspec.yaml.bak
-          # 强制清理缓存并获取依赖
+          # 把 url_launcher 降到兼容 Dart 3.5 的版本
+          sed -i.bak 's/url_launcher: >=6.3.2/url_launcher: 6.2.5/g' pubspec.yaml
+          rm -f pubspec.yaml.bak pubspec.yaml.bak.bak
+          # 强制清理并安装依赖
           flutter clean
           flutter pub cache repair
           flutter pub get
 
-      # 直接打包 iOS（兼容你的 16.4.1）
       - name: Build iOS
         run: |
           cd simple_live_app
           flutter build ios --release --no-codesign
 
-      # 生成可安装的 IPA
-      - name: Create IPA
+      - name: Make IPA
         run: |
-          cd simple_live_app
-          mkdir -p build/ios/iphoneos/Payload
-          cp -R build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
-          cd build/ios/iphoneos
+          cd simple_live_app/build/ios/iphoneos
+          mkdir -p Payload
+          cp -r Runner.app Payload/
           zip -r ios_no_sign.ipa Payload
-          cd ../../..
 
-      # 上传到 Artifacts，你直接下载就能用
-      - name: Upload IPA
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
           path: simple_live_app/build/ios/iphoneos/ios_no_sign.ipa
