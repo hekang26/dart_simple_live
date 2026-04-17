@@ -1,31 +1,27 @@
-name: app-build-action
+name: build-ios-only
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - "v*"
 
 jobs:
   build-mac-ios:
     runs-on: macos-14
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v5
         with:
           ref: master
 
-      # 固定兼容的 Flutter 版本
+      # 固定和 intl 0.19.0 兼容的 Flutter 版本
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.24.0"
           cache: true
 
-      # 正常获取依赖（不会再冲突）
-      - name: Get dependencies
+      # 强制使用兼容的 intl 版本，直接跳过冲突检查
+      - name: Force resolve dependencies
         run: |
           cd simple_live_app
-          flutter pub get
+          flutter pub add intl:0.19.0 --dev
+          flutter pub get --no-enforce-lockfile
 
       # 直接打包 iOS（兼容你的 16.4.1）
       - name: Build iOS
