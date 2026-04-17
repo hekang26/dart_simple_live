@@ -8,22 +8,25 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # 用和你所有依赖都兼容的稳定版
+      # 用稳定的 Flutter 3.24.0（Dart 3.5.4，兼容你所有依赖）
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.22.3"
+          flutter-version: "3.24.0"
           channel: stable
 
-      # 强制修改 pubspec.yaml，让所有依赖版本都兼容
-      - name: Force dependency versions
+      # 强制修改 pubspec.yaml，一次性解决所有依赖冲突
+      - name: Force fix all dependencies
         run: |
           cd simple_live_app
-          # 把 intl 降到兼容版本
-          sed -i.bak 's/intl: ^0.20.2/intl: ^0.19.0/g' pubspec.yaml
-          # 把 url_launcher 降到兼容 Dart 3.5 的版本
-          sed -i.bak 's/url_launcher: >=6.3.2/url_launcher: 6.2.5/g' pubspec.yaml
-          rm -f pubspec.yaml.bak pubspec.yaml.bak.bak
-          # 强制清理并安装依赖
+          # 备份原始文件
+          cp pubspec.yaml pubspec.yaml.bak
+          # 修改 intl 版本
+          sed -i '' 's/intl: ^0.20.2/intl: ^0.19.0/g' pubspec.yaml
+          # 修改 url_launcher 版本
+          sed -i '' 's/url_launcher: >=6.3.2/url_launcher: 6.2.5/g' pubspec.yaml
+          # 修改 image_gallery_saver_plus 版本（关键！）
+          sed -i '' 's/image_gallery_saver_plus: >=4.0.0-0.alpha/image_gallery_saver_plus: 3.1.0/g' pubspec.yaml
+          # 强制清理缓存并安装依赖
           flutter clean
           flutter pub cache repair
           flutter pub get
